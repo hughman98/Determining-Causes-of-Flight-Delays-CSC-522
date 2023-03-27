@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import statistics
+import random
 
 
 def distance(p1, p2, median):
@@ -49,18 +50,45 @@ def get_knn(data, p1, k):
     return ret
 
 
-def smote(data, n):
+def smote(mc, n, k):
     """
-    smote implements the SMOTE-NC algorithm
+    smote implements the SMOTE-NC algorithm, details of which can be found here: https://arxiv.org/pdf/1106.1813.pdf
 
-    :param data: A pandas dataframe containing a subset of the dataset being smoted.
+    :param mc: A pandas dataframe containing a subset of the dataset being smoted.
      This subject should only contain the minority class being expanded.
      All nominal columns should contain only strings, and all numerical columns should have no strings.
-    :param n: The number of new data points that should be created.
+    :param n: The number of new data points that should be created. It cannot be larger than the length of data
+    :param k: The number of nearest neighbors to use during synthesis.
     :return: A new pandas dataframe containing all artificial data
     """
+    if n < len(mc):
+        mc = mc.sample(frac=1)
+    elif n > len(mc):
+        raise Exception("n must not be greater than the length of the dataframe.")
 
-    # TODO: Finish this
+    dict = {}
+    for col in mc.columns:
+        dict[col] = []
+
+    count = 0
+    for idx, data_point in mc.iterrows():
+        count += 1
+        if count > n:
+            break
+        neighbors = get_knn(mc, data_point, k)
+        picked = neighbors[random.randint(0, k - 1)]
+
+        for col in mc.columns:
+            if isinstance(data_point[col], str):  # nominal columns use mode of neighbors
+                neighbor_values = []
+                for neighbor in neighbors:
+                    neighbor_values.append(neighbor[col])
+                dict[col].append(statistics.mode(neighbor_values))
+
+            else:  # numeric columns use the mean with our randomly picked neighbor
+                dict[col].append(statistics.mean((data_point[col], picked[col])))
+
+    return pd.DataFrame.from_dict(dict)
 
 
 if __name__ == '__main__':
@@ -82,3 +110,5 @@ if __name__ == '__main__':
 
     assert list(get_knn(df, df.iloc[0], 2)[0]) == list(df.iloc[1])
     assert list(get_knn(df, df.iloc[0], 2)[0]) != list(df.iloc[0])
+
+    print(smote(df, 3, 5))
