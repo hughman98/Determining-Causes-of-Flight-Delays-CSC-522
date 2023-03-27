@@ -75,6 +75,7 @@ def smote(mc, n, k):
         count += 1
         if count > n:
             break
+        
         neighbors = get_knn(mc, data_point, k)
         picked = neighbors[random.randint(0, k - 1)]
 
