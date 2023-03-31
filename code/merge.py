@@ -1,9 +1,13 @@
 import pandas as pd
+import os
 
-flight_data = pd.read_csv('flight_data.csv')
-ewr_weather_data = pd.read_csv('EWR_Weather.csv')
-jfk_weather_data = pd.read_csv('JFK_Weather.csv')
-lga_weather_data = pd.read_csv('LGA_Weather.csv')
+# Get path of the file directory where merge.py exists
+cur_dir = os.path.dirname(__file__)
+
+flight_data = pd.read_csv(cur_dir + '/../data/flight_data.csv')
+ewr_weather_data = pd.read_csv(cur_dir + '/../data/EWR_Weather.csv')
+jfk_weather_data = pd.read_csv(cur_dir + '/../data/JFK_Weather.csv')
+lga_weather_data = pd.read_csv(cur_dir + '/../data/LGA_Weather.csv')
 
 flight_data['date'] = pd.to_datetime(flight_data[['year', 'month', 'day']])
 
@@ -32,4 +36,4 @@ for index, row in flight_data.iterrows():
         if col != 'Date':
             flight_data.loc[index, col] = matching_weather_data.iloc[0][col]
 
-flight_data.to_csv('flight_weather_data.csv', index=False)
+flight_data.to_csv(cur_dir + '/../data/flight_weather_data.csv', index=False)
