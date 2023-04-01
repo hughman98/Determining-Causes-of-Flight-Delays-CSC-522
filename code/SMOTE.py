@@ -61,33 +61,33 @@ def smote(mc, n, k):
     :param k: The number of nearest neighbors to use during synthesis.
     :return: A new pandas dataframe containing all artificial data
     """
-    if n < len(mc):
-        mc = mc.sample(frac=1)
-    elif n > len(mc):
-        raise Exception("n must not be greater than the length of the dataframe.")
+
+    # Randomize order
+    mc = mc.sample(frac=1)
 
     dict = {}
     for col in mc.columns:
         dict[col] = []
 
     count = 0
-    for idx, data_point in mc.iterrows():
-        count += 1
-        if count > n:
-            break
-        
-        neighbors = get_knn(mc, data_point, k)
-        picked = neighbors[random.randint(0, k - 1)]
+    while count <= n:
+        for idx, data_point in mc.iterrows():
+            count += 1
+            if count > n:
+                break
 
-        for col in mc.columns:
-            if isinstance(data_point[col], str):  # nominal columns use mode of neighbors
-                neighbor_values = []
-                for neighbor in neighbors:
-                    neighbor_values.append(neighbor[col])
-                dict[col].append(statistics.mode(neighbor_values))
+            neighbors = get_knn(mc, data_point, k)
+            picked = neighbors[random.randint(0, k - 1)]
 
-            else:  # numeric columns use the mean with our randomly picked neighbor
-                dict[col].append(statistics.mean((data_point[col], picked[col])))
+            for col in mc.columns:
+                if isinstance(data_point[col], str):  # nominal columns use mode of neighbors
+                    neighbor_values = []
+                    for neighbor in neighbors:
+                        neighbor_values.append(neighbor[col])
+                    dict[col].append(statistics.mode(neighbor_values))
+
+                else:  # numeric columns use the mean with our randomly picked neighbor
+                    dict[col].append(statistics.mean((data_point[col], picked[col])))
 
     return pd.DataFrame.from_dict(dict)
 
