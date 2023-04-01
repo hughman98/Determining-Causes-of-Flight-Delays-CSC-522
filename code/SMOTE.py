@@ -2,7 +2,16 @@ import pandas as pd
 import numpy as np
 import statistics
 import random
+import multiprocessing
 
+from imblearn.over_sampling import SMOTENC
+df = pd.read_csv(r'..\Data\train_set_natural.csv')
+mc = df.loc[df['delay_class'] == 'yes']
+
+standard_deviations = mc.std(numeric_only=True)
+median = statistics.median(standard_deviations)
+
+k = 5
 
 def distance(p1, p2, median):
     """
@@ -55,8 +64,32 @@ def get_knn(data, p1, k, median):
 
     return ret[1:k + 1]
 
+def make_new(indexed):
+    global mc
+    global k
+    global median
 
-def smote(mc, n, k):
+    data_point = indexed[1]
+
+    local_dict = {}
+    for col in mc.columns:
+        local_dict[col] = []
+
+    neighbors = get_knn(mc, data_point, k, median)
+    picked = neighbors[random.randint(0, k - 1)]
+
+    for col in mc.columns:
+        if isinstance(data_point[col], str):  # nominal columns use mode of neighbors
+            neighbor_values = []
+            for neighbor in neighbors:
+                neighbor_values.append(neighbor[col])
+            local_dict[col].append(statistics.mode(neighbor_values))
+
+        else:  # numeric columns use the mean with our randomly picked neighbor
+            local_dict[col].append(statistics.mean((data_point[col], picked[col])))
+
+    return local_dict
+def smote(mc_local, n, k_local):
     """
     smote implements the SMOTE-NC algorithm, details of which can be found here: https://arxiv.org/pdf/1106.1813.pdf
 
@@ -69,7 +102,14 @@ def smote(mc, n, k):
     """
 
     # Randomize order
-    mc = mc.sample(frac=1)
+    global mc
+    global median
+    global k
+
+    k = k_local
+    mc = mc_local
+    mc.sample(frac=1)
+
     standard_deviations = mc.std(numeric_only=True)
     median = statistics.median(standard_deviations)
 
@@ -79,25 +119,17 @@ def smote(mc, n, k):
 
     count = 0
     while count <= n:
-        for idx, data_point in mc.iterrows():
-            if count % 10 == 0:
-                print("Made %i/%i samples!" % (count, n))
-            count += 1
-            if count > n:
-                break
+        with multiprocessing.Pool() as pool:
+            for result in pool.imap(make_new, mc.iterrows()):
+                for col in mc.columns:
+                    dict[col] += result[col]
 
-            neighbors = get_knn(mc, data_point, k, median)
-            picked = neighbors[random.randint(0, k - 1)]
+                if count % 10 == 0:
+                    print("Made %i/%i samples!" % (count, n))
+                count += 1
+                if count > n:
+                    break
 
-            for col in mc.columns:
-                if isinstance(data_point[col], str):  # nominal columns use mode of neighbors
-                    neighbor_values = []
-                    for neighbor in neighbors:
-                        neighbor_values.append(neighbor[col])
-                    dict[col].append(statistics.mode(neighbor_values))
-
-                else:  # numeric columns use the mean with our randomly picked neighbor
-                    dict[col].append(statistics.mean((data_point[col], picked[col])))
 
     return pd.DataFrame.from_dict(dict)
 
@@ -114,19 +146,32 @@ if __name__ == '__main__':
 
     df = pd.read_csv(r'..\Data\train_set_natural.csv')
 
-    median = statistics.median(df.std(numeric_only=True))
-
-    # assert distance(df.iloc[0], df.iloc[0], median) == 0
-    # assert distance(df.iloc[0], df.iloc[1], median) != 0
-
-    # assert list(get_knn(df, df.iloc[0], 2)[0]) == list(df.iloc[1])
-    # assert list(get_knn(df, df.iloc[0], 2)[0]) != list(df.iloc[0])
-
-    # print(get_knn(df, df.iloc[0], 5, median))
-
     min_class = df.loc[df['delay_class'] == 'yes']
     maj_class = df.loc[df['delay_class'] == 'no']
 
     art_data = smote(min_class, len(maj_class) - len(min_class), 5)
+    
+    art_data.to_csv(r"..\data\train_set_artificial_slow.csv", index=False)
 
-    art_data.to_csv(r"..\data\train_set_artificial.csv", index=False)
+    """
+    # This code is for reference purposes only. TODO: Delete it
+    
+    X = df.loc[:, df.columns != 'delay_class']
+    y = df['delay_class']
+    
+    
+    i = 0
+    categorical_features = []
+    for col in X.columns:
+        if isinstance(X.iloc[0][col], str):  # nominal columns use mode of neighbors
+            categorical_features.append(i)
+        i += 1
+
+    sm = SMOTENC(random_state=0, categorical_features=categorical_features)
+
+    new_X, new_Y = sm.fit_resample(X, y)
+
+    art_data = new_X.join(new_Y)
+    """
+
+
