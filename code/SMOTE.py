@@ -150,7 +150,7 @@ if __name__ == '__main__':
     maj_class = df.loc[df['delay_class'] == 'no']
 
     art_data = smote(min_class, len(maj_class) - len(min_class), 5)
-    
+
     art_data.to_csv(r"..\data\train_set_artificial_slow.csv", index=False)
 
     """
