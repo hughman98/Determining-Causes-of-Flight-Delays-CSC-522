@@ -25,29 +25,34 @@ def distance(p1, p2, median):
     return np.sqrt(sum_of_squares)
 
 
-def get_knn(data, p1, k):
+def get_knn(data, p1, k, median):
     """
     KNN Algorithm
 
     :param data: A dataframe containing all data that needs to be searched
     :param p1: The datapoint we are looking for neighbors for, as an iterable object
     :param k: How many neighbors we should find.
+    :param median: median SD, for use in distance()
     :return: A list of neighbors.
     """
-    standard_deviations = data.std(numeric_only=True)
-    median = statistics.median(standard_deviations)
 
-    distances = list()
+    distances = [float('inf')]*(k+2)
+    ret = [0]*(k+2)
     for idx, p2 in data.iterrows():
-        distances.append((distance(p1, p2, median), idx))
-        distances.sort()
+        dis = distance(p1, p2, median)
+        row = p2
 
-    ret = []
-    # This starts at 1 so that the value itself is not returned as a neighbor
-    for value in distances[1:k + 1]:
-        ret.append(data.iloc[value[1]])
+        for i in range(k+1):
+            if distances[i] > dis:
+                temp_dis = distances[i]
+                temp_row = ret[i]
+                distances[i] = dis
+                dis = temp_dis
 
-    return ret
+                ret[i] = row
+                row = temp_row
+
+    return ret[1:k + 1]
 
 
 def smote(mc, n, k):
@@ -64,6 +69,8 @@ def smote(mc, n, k):
 
     # Randomize order
     mc = mc.sample(frac=1)
+    standard_deviations = mc.std(numeric_only=True)
+    median = statistics.median(standard_deviations)
 
     dict = {}
     for col in mc.columns:
@@ -72,11 +79,13 @@ def smote(mc, n, k):
     count = 0
     while count <= n:
         for idx, data_point in mc.iterrows():
+            if count%10 == 0:
+                print("Made %i/%i samples!" % (count, n))
             count += 1
             if count > n:
                 break
 
-            neighbors = get_knn(mc, data_point, k)
+            neighbors = get_knn(mc, data_point, k, median)
             picked = neighbors[random.randint(0, k - 1)]
 
             for col in mc.columns:
@@ -102,14 +111,21 @@ if __name__ == '__main__':
         "id": [0, 1, 2, 3, 4, 5]
     }
 
-    df = pd.DataFrame.from_dict(data)
+    df = pd.read_csv(r'..\Data\train_set_natural.csv')
 
     median = statistics.median(df.std(numeric_only=True))
 
-    assert distance(df.iloc[0], df.iloc[0], median) == 0
-    assert distance(df.iloc[0], df.iloc[1], median) != 0
+    #assert distance(df.iloc[0], df.iloc[0], median) == 0
+    #assert distance(df.iloc[0], df.iloc[1], median) != 0
 
-    assert list(get_knn(df, df.iloc[0], 2)[0]) == list(df.iloc[1])
-    assert list(get_knn(df, df.iloc[0], 2)[0]) != list(df.iloc[0])
+    #assert list(get_knn(df, df.iloc[0], 2)[0]) == list(df.iloc[1])
+    #assert list(get_knn(df, df.iloc[0], 2)[0]) != list(df.iloc[0])
 
-    print(smote(df, 3, 5))
+    #print(get_knn(df, df.iloc[0], 5))
+
+    min_class = df.loc[df['delay_class'] == 'yes']
+    maj_class = df.loc[df['delay_class'] == 'no']
+
+    art_data = smote(min_class, len(maj_class) - len(min_class), 5)
+
+    art_data.to_csv(r"..\data\train_set_artificial.csv", index=False)
