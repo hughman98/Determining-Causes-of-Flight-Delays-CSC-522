@@ -36,16 +36,17 @@ def get_knn(data, p1, k, median):
     :return: A list of neighbors.
     """
 
-    distances = [float('inf')]*(k+2)
-    ret = [0]*(k+2)
+    distances = [float('inf')] * (k + 2)
+    ret = [0] * (k + 2)
     for idx, p2 in data.iterrows():
         dis = distance(p1, p2, median)
         row = p2
 
-        for i in range(k+1):
+        for i in range(k + 1):
             if distances[i] > dis:
                 temp_dis = distances[i]
                 temp_row = ret[i]
+
                 distances[i] = dis
                 dis = temp_dis
 
@@ -79,7 +80,7 @@ def smote(mc, n, k):
     count = 0
     while count <= n:
         for idx, data_point in mc.iterrows():
-            if count%10 == 0:
+            if count % 10 == 0:
                 print("Made %i/%i samples!" % (count, n))
             count += 1
             if count > n:
@@ -115,13 +116,13 @@ if __name__ == '__main__':
 
     median = statistics.median(df.std(numeric_only=True))
 
-    #assert distance(df.iloc[0], df.iloc[0], median) == 0
-    #assert distance(df.iloc[0], df.iloc[1], median) != 0
+    # assert distance(df.iloc[0], df.iloc[0], median) == 0
+    # assert distance(df.iloc[0], df.iloc[1], median) != 0
 
-    #assert list(get_knn(df, df.iloc[0], 2)[0]) == list(df.iloc[1])
-    #assert list(get_knn(df, df.iloc[0], 2)[0]) != list(df.iloc[0])
+    # assert list(get_knn(df, df.iloc[0], 2)[0]) == list(df.iloc[1])
+    # assert list(get_knn(df, df.iloc[0], 2)[0]) != list(df.iloc[0])
 
-    #print(get_knn(df, df.iloc[0], 5))
+    # print(get_knn(df, df.iloc[0], 5, median))
 
     min_class = df.loc[df['delay_class'] == 'yes']
     maj_class = df.loc[df['delay_class'] == 'no']
