@@ -8,6 +8,7 @@ import os
 cur_dir = os.getcwd()
 
 from imblearn.over_sampling import SMOTENC
+
 df = pd.read_csv(cur_dir + '/../data/train_set_natural.csv')
 mc = df.loc[df['delay_class'] == 'yes']
 
@@ -15,6 +16,7 @@ standard_deviations = mc.std(numeric_only=True)
 median = statistics.median(standard_deviations)
 
 k = 5
+
 
 def distance(p1, p2, median):
     """
@@ -67,6 +69,7 @@ def get_knn(data, p1, k, median):
 
     return ret[1:k + 1]
 
+
 def make_new(indexed):
     global mc
     global k
@@ -92,15 +95,17 @@ def make_new(indexed):
             local_dict[col].append(statistics.mean((data_point[col], picked[col])))
 
     return local_dict
+
+
 def smote(mc_local, n, k_local):
     """
     smote implements the SMOTE-NC algorithm, details of which can be found here: https://arxiv.org/pdf/1106.1813.pdf
 
-    :param mc: A pandas dataframe containing a subset of the dataset being smoted.
+    :param mc_local:  A pandas dataframe containing a subset of the dataset being smoted.
      This subject should only contain the minority class being expanded.
      All nominal columns should contain only strings, and all numerical columns should have no strings.
     :param n: The number of new data points that should be created. It cannot be larger than the length of data
-    :param k: The number of nearest neighbors to use during synthesis.
+    :param k_local: The number of nearest neighbors to use during synthesis.
     :return: A new pandas dataframe containing all artificial data
     """
 
@@ -133,7 +138,6 @@ def smote(mc_local, n, k_local):
                 if count > n:
                     break
 
-
     return pd.DataFrame.from_dict(dict)
 
 
@@ -153,28 +157,8 @@ if __name__ == '__main__':
     maj_class = df.loc[df['delay_class'] == 'no']
 
     art_data = smote(min_class, len(maj_class) - len(min_class), 5)
+    # art_data = smote(min_class, 10, 5)
 
-    art_data.to_csv(cur_dir + '/../data/train_set_artificial_slow.csv', index=False)
+    art_data = pd.concat([df, art_data], axis=0)
 
-    """
-    # This code is for reference purposes only. TODO: Delete it
-    
-    X = df.loc[:, df.columns != 'delay_class']
-    y = df['delay_class']
-    
-    
-    i = 0
-    categorical_features = []
-    for col in X.columns:
-        if isinstance(X.iloc[0][col], str):  # nominal columns use mode of neighbors
-            categorical_features.append(i)
-        i += 1
-
-    sm = SMOTENC(random_state=0, categorical_features=categorical_features)
-
-    new_X, new_Y = sm.fit_resample(X, y)
-
-    art_data = new_X.join(new_Y)
-    """
-
-
+    art_data.to_csv(cur_dir + '/../data/train_set_artificial.csv', index=False)
