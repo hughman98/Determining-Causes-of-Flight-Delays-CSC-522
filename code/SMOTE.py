@@ -3,9 +3,12 @@ import numpy as np
 import statistics
 import random
 import multiprocessing
+import os
+
+cur_dir = os.getcwd()
 
 from imblearn.over_sampling import SMOTENC
-df = pd.read_csv(r'..\Data\train_set_natural.csv')
+df = pd.read_csv(cur_dir + '/../data/train_set_natural.csv')
 mc = df.loc[df['delay_class'] == 'yes']
 
 standard_deviations = mc.std(numeric_only=True)
@@ -144,14 +147,14 @@ if __name__ == '__main__':
         "id": [0, 1, 2, 3, 4, 5]
     }
 
-    df = pd.read_csv(r'..\Data\train_set_natural.csv')
+    df = pd.read_csv(cur_dir + '/../data/train_set_natural.csv')
 
     min_class = df.loc[df['delay_class'] == 'yes']
     maj_class = df.loc[df['delay_class'] == 'no']
 
     art_data = smote(min_class, len(maj_class) - len(min_class), 5)
 
-    art_data.to_csv(r"..\data\train_set_artificial_slow.csv", index=False)
+    art_data.to_csv(cur_dir + '/../data/train_set_artificial_slow.csv', index=False)
 
     """
     # This code is for reference purposes only. TODO: Delete it
