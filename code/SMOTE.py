@@ -142,15 +142,7 @@ def smote(mc_local, n, k_local):
 
 
 if __name__ == '__main__':
-    # Some basic tests to see if the functions working as intended
-
-    data = {
-        "calories": [420, 420, 390, 65, 389, 5684],
-        "duration": [50, 50, 45, 56, 34, 87],
-        "type": ["ice-cream", "ice-cream", "meat", "veg", "veg", "ice-cream"],
-        "id": [0, 1, 2, 3, 4, 5]
-    }
-
+    
     df = pd.read_csv(cur_dir + '/../data/train_set_natural.csv')
 
     min_class = df.loc[df['delay_class'] == 'yes']
